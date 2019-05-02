@@ -44,7 +44,7 @@ public class RequestRouter {
         uriResourceMap = Collections.unmodifiableMap(tmp);
     }
 
-    public HttpResponse handleRequest(final HttpRequest httpRequest) {
+    public Response handleRequest(final Request httpRequest) {
 
 
         String path = httpRequest.getUri().getPath();
@@ -55,21 +55,21 @@ public class RequestRouter {
                 final RestEntity restEntity = process(restResource.get(), httpRequest);
                 final byte[] bytes = objectMapper.writeValueAsBytes(restEntity.getResponse());
                 int contentLength = bytes.length;
-                return HttpResponse.builder().withStatus(restEntity.getHttpStatus()).withBody(bytes)
+                return Response.builder().withStatus(restEntity.getStatus()).withBody(bytes)
                     .withHttpHeaders(restEntity.getHttpHeaders().addHeader("Content-Length", Integer.toString(contentLength))).build();
             } else {
-                return HttpResponses.notFound();
+                return Responses.notFound();
             }
         } catch (final Exception e) {
             e.printStackTrace();
-            return HttpResponses.internalError();
+            return Responses.internalError();
         }
 
 
     }
 
 
-    private RestEntity process(RestResource restResource, HttpRequest httpRequest) {
+    private RestEntity process(RestResource restResource, Request httpRequest) {
 
         try {
             if (httpRequest.isGet()) {
@@ -77,10 +77,10 @@ public class RequestRouter {
             } else if (httpRequest.isPost()) {
                 return restResource.doPost(objectMapper.readValue(httpRequest.getBody(), restResource.getRequestType()));
             } else {
-                return new RestEntity(HttpStatus.METHOD_NOT_ALLOWED, null, new HttpHeaders());
+                return new RestEntity(Status.METHOD_NOT_ALLOWED, null, new Headers());
             }
         } catch (Exception e) {
-            return new RestEntity(HttpStatus.INTERNAL_SERVER_ERROR, null, new HttpHeaders());
+            return new RestEntity(Status.INTERNAL_SERVER_ERROR, null, new Headers());
         }
     }
 
