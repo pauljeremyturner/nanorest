@@ -44,3 +44,21 @@ You have 3 methods you need to implement:
 The class `RestEntity` is a simple wrapper class.  It is not practical for the `doGet` and `doPost` methods to return the
 response payload type because it is impossible to return anything useful in the event of a non 2xx response.
 
+## Using the Sum module
+
+An example module has already been written and included.  This keeps the sum and allows http POST requests to increase it and http GET requests to query it. 
+
+GET Request
+
+Use http://localhost:8080/sum
+
+
+POST Requests
+
+Use http://localhost:8080/sum
+
+You have to specify the content-length as a header and a json payload with the value to increment by:
+
+```
+{ "sum" : "666"}
+```
