@@ -27,7 +27,10 @@ public class RequestRouter {
 
     private final Map<String, RestResource> uriResourceMap;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // ThreadLocal ObjectMapper for better concurrency performance
+    // Each thread gets its own ObjectMapper instance to avoid contention
+    private static final ThreadLocal<ObjectMapper> objectMapper =
+        ThreadLocal.withInitial(ObjectMapper::new);
 
     public static final RequestRouter instance = new RequestRouter();
 
@@ -69,7 +72,7 @@ public class RequestRouter {
                 final byte[] bytes;
                 int contentLength;
                 if (restEntity.getStatus().is2xx()) {
-                    bytes = objectMapper.writeValueAsBytes(restEntity.getResponse());
+                    bytes = objectMapper.get().writeValueAsBytes(restEntity.getResponse());
                     contentLength = bytes.length;
                 } else {
                     bytes = new byte[0];
@@ -81,7 +84,7 @@ public class RequestRouter {
                 return Responses.notFound();
             }
         } catch (final Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Error handling request [path=" + request.getUri().getPath() + "]", e);
             return Responses.internalError();
         }
 
@@ -95,13 +98,15 @@ public class RequestRouter {
             if (request.isGet()) {
                 return restResource.doGet();
             } else if (request.isPost()) {
-                return restResource.doPost(objectMapper.readValue(request.getBody(), restResource.getRequestType()));
+                return restResource.doPost(objectMapper.get().readValue(request.getBody(), restResource.getRequestType()));
             } else {
                 return new RestEntity(Status.METHOD_NOT_ALLOWED, null, new Headers());
             }
         } catch (JsonParseException | JsonMappingException je) {
+            logger.log(Level.WARNING, "Bad request - JSON parsing failed", je);
             return new RestEntity(Status.BAD_REQUEST, null, new Headers());
         } catch (Exception e) {
+            logger.log(Level.SEVERE, "Internal error processing request", e);
             return new RestEntity(Status.INTERNAL_SERVER_ERROR, null, new Headers());
         }
     }

@@ -1,5 +1,6 @@
 package com.paulturner.nanorest.http;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -9,7 +10,8 @@ public class Headers {
 
     private static final String HEADER_CONTENT_LENGTH = "content-length";
 
-    private Map<String, String> headers = new LinkedHashMap<>();
+    // Use a synchronized map wrapper for thread safety when headers might be accessed concurrently
+    private final Map<String, String> headers = Collections.synchronizedMap(new LinkedHashMap<>());
 
     public Headers() {
     }
@@ -22,10 +24,13 @@ public class Headers {
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
-        headers.entrySet().forEach(
-            entry ->
-                stringBuilder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n")
-        );
+        // Synchronize iteration over synchronized map for consistent snapshot
+        synchronized (headers) {
+            headers.entrySet().forEach(
+                entry ->
+                    stringBuilder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n")
+            );
+        }
         return stringBuilder.toString();
     }
 

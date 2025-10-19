@@ -66,10 +66,21 @@ public class ReadWriteHandler
     }
 
     @Override
-    public void failed(final Throwable t, final ServerSession att) {
+    public void failed(final Throwable t, final ServerSession serverSession) {
+        logger.log(Level.SEVERE, "ReadWriteHandler failed for client [clientAddress=" +
+            serverSession.clientSocketAddress + "]", t);
 
-        t.printStackTrace();
-        System.out.println(att);
+        // Cleanup resources on failure
+        try {
+            if (serverSession.buffer != null) {
+                ByteBufferPool.getInstance().release(serverSession.buffer);
+            }
+            if (serverSession.channelClient != null && serverSession.channelClient.isOpen()) {
+                serverSession.channelClient.close();
+            }
+        } catch (IOException ioe) {
+            logger.log(Level.WARNING, "Error cleaning up resources after failure", ioe);
+        }
     }
 
 }
